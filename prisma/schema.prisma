@@ -1,0 +1,259 @@
+// Prisma schema for Goal Setting & Tracking Portal
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  ADMIN
+}
+
+enum GoalSheetStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  RETURNED
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  ON_TRACK
+  COMPLETED
+}
+
+enum CheckInStatus {
+  PENDING
+  EMPLOYEE_SUBMITTED
+  MANAGER_REVIEWED
+}
+
+enum Quarter {
+  GOAL_SETTING
+  Q1
+  Q2
+  Q3
+  Q4
+}
+
+enum UoM {
+  NUMERIC_MIN
+  NUMERIC_MAX
+  PERCENTAGE_MIN
+  PERCENTAGE_MAX
+  TIMELINE
+  ZERO_BASED
+}
+
+enum EscalationType {
+  OVERDUE_SUBMISSION
+  OVERDUE_APPROVAL
+  OVERDUE_CHECKIN
+}
+
+enum NotificationType {
+  GOAL_SHEET_SUBMITTED
+  GOAL_SHEET_APPROVED
+  GOAL_SHEET_RETURNED
+  CHECKIN_WINDOW_OPENED
+  CHECKIN_REMINDER
+  ESCALATION
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(EMPLOYEE)
+  departmentId String?
+  managerId    String?
+  azureAdId    String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department    Department?    @relation(fields: [departmentId], references: [id])
+  manager       User?          @relation("Reports", fields: [managerId], references: [id])
+  reports       User[]         @relation("Reports")
+  goalSheets    GoalSheet[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+}
+
+model Department {
+  id    String @id @default(cuid())
+  name  String @unique
+  users User[]
+}
+
+model PerformanceCycle {
+  id         String   @id @default(cuid())
+  name       String   @db.VarChar(100)
+  startDate  DateTime
+  endDate    DateTime
+  isActive   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  windows    CheckInWindow[]
+  goalSheets GoalSheet[]
+}
+
+model CheckInWindow {
+  id       String   @id @default(cuid())
+  cycleId  String
+  quarter  Quarter
+  opensAt  DateTime
+  closesAt DateTime
+
+  cycle PerformanceCycle @relation(fields: [cycleId], references: [id])
+}
+
+model ThrustArea {
+  id    String @id @default(cuid())
+  name  String @unique
+  goals Goal[]
+}
+
+model GoalSheet {
+  id            String          @id @default(cuid())
+  employeeId    String
+  cycleId       String
+  status        GoalSheetStatus @default(DRAFT)
+  lockDate      DateTime?
+  reworkComment String?         @db.VarChar(2000)
+  submittedAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  employee User             @relation(fields: [employeeId], references: [id])
+  cycle    PerformanceCycle @relation(fields: [cycleId], references: [id])
+  goals    Goal[]
+  checkIns CheckIn[]
+
+  @@unique([employeeId, cycleId])
+}
+
+model Goal {
+  id           String   @id @default(cuid())
+  goalSheetId  String
+  thrustAreaId String
+  title        String   @db.VarChar(200)
+  description  String   @db.VarChar(1000)
+  uom          UoM
+  target       String
+  weightage    Int
+  isShared     Boolean  @default(false)
+  isReadOnly   Boolean  @default(false)
+  sharedGoalId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  goalSheet    GoalSheet              @relation(fields: [goalSheetId], references: [id])
+  thrustArea   ThrustArea             @relation(fields: [thrustAreaId], references: [id])
+  achievements QuarterlyAchievement[]
+  auditLogs    AuditLog[]
+  sharedGoal   SharedGoal?            @relation(fields: [sharedGoalId], references: [id])
+}
+
+model SharedGoal {
+  id           String   @id @default(cuid())
+  createdById  String
+  thrustAreaId String
+  title        String   @db.VarChar(200)
+  description  String   @db.VarChar(1000)
+  uom          UoM
+  target       String
+  createdAt    DateTime @default(now())
+
+  linkedGoals Goal[]
+}
+
+model QuarterlyAchievement {
+  id            String     @id @default(cuid())
+  goalId        String
+  quarter       Quarter
+  achievement   String?
+  status        GoalStatus @default(NOT_STARTED)
+  progressScore Float?
+  savedAt       DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  goal Goal @relation(fields: [goalId], references: [id])
+
+  @@unique([goalId, quarter])
+}
+
+model CheckIn {
+  id          String        @id @default(cuid())
+  goalSheetId String
+  quarter     Quarter
+  managerId   String?
+  comment     String?       @db.VarChar(2000)
+  status      CheckInStatus @default(PENDING)
+  reviewedAt  DateTime?
+  createdAt   DateTime      @default(now())
+
+  goalSheet GoalSheet @relation(fields: [goalSheetId], references: [id])
+
+  @@unique([goalSheetId, quarter])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  goalId    String
+  field     String
+  oldValue  String?
+  newValue  String?
+  reason    String?
+  createdAt DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id])
+  goal  Goal @relation(fields: [goalId], references: [id])
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  type        NotificationType
+  title       String
+  body        String
+  deepLink    String?
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  recipient User @relation(fields: [recipientId], references: [id])
+}
+
+model EscalationRule {
+  id              String         @id @default(cuid())
+  eventType       EscalationType
+  daysOverdue     Int
+  recipientUserId String?
+  recipientRole   Role?
+  isActive        Boolean        @default(true)
+
+  logs EscalationLog[]
+}
+
+model EscalationLog {
+  id          String   @id @default(cuid())
+  ruleId      String
+  actorId     String
+  recipientId String
+  daysOverdue Int
+  createdAt   DateTime @default(now())
+
+  rule EscalationRule @relation(fields: [ruleId], references: [id])
+}
