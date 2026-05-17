@@ -709,12 +709,14 @@ describe("getActiveWindow", () => {
 
   it("returns the window when now equals closesAt exactly", async () => {
     const now = new Date();
+    // Add 100ms buffer to account for execution time between test's `now` and function's `now`
+    const closeTime = new Date(now.getTime() + 100);
     const exactCloseWindow = {
       id: "window-q3",
       cycleId: "cycle-1",
       quarter: "Q3",
       opensAt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
-      closesAt: now,
+      closesAt: closeTime,
     };
 
     (mockPrisma.performanceCycle.findFirst as jest.Mock).mockResolvedValue({

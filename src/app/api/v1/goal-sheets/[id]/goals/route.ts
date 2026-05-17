@@ -1,5 +1,5 @@
 /**
- * POST /api/v1/goal-sheets/:sheetId/goals  — add a goal to a DRAFT sheet
+ * POST /api/v1/goal-sheets/:id/goals  — add a goal to a DRAFT sheet
  */
 import { NextRequest, NextResponse } from "next/server";
 import { withEmployee } from "@/lib/auth-helpers";
@@ -16,13 +16,13 @@ const VALID_UOM: UoM[] = [
   "ZERO_BASED",
 ];
 
-// ─── POST /api/v1/goal-sheets/:sheetId/goals ─────────────────────────────────
+// ─── POST /api/v1/goal-sheets/:id/goals ───────────────────────────────────────
 
 export const POST = withEmployee(
   async (req: NextRequest, context?: { params: Record<string, string> }) => {
-    const sheetId = context?.params?.sheetId;
-    if (!sheetId) {
-      return NextResponse.json({ error: "Missing sheetId" }, { status: 400 });
+    const id = context?.params?.id;
+    if (!id) {
+      return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
 
     const session = await auth();
@@ -31,7 +31,7 @@ export const POST = withEmployee(
 
     // Load the sheet
     const sheet = await prisma.goalSheet.findUnique({
-      where: { id: sheetId },
+      where: { id },
       include: {
         employee: { select: { id: true, managerId: true } },
         goals: true,
@@ -184,7 +184,7 @@ export const POST = withEmployee(
 
     const goal = await prisma.goal.create({
       data: {
-        goalSheetId: sheetId,
+        goalSheetId: id,
         thrustAreaId,
         title: title.trim(),
         description: description.trim(),

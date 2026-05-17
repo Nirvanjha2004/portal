@@ -3,11 +3,13 @@
  *
  * Manager returns a PENDING_APPROVAL sheet for rework.
  * Sets status → RETURNED, records reworkComment.
+ * Dispatches notification to the employee.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { withManager } from "@/lib/auth-helpers";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { dispatch } from "@/services/notification.service";
 
 export const POST = withManager(
   async (req: NextRequest, context?: { params: Record<string, string> }) => {
@@ -71,9 +73,17 @@ export const POST = withManager(
         reworkComment: comment.trim(),
       },
       include: {
+        employee: { select: { id: true, name: true } },
         cycle: { select: { id: true, name: true, isActive: true } },
         goals: { include: { thrustArea: { select: { id: true, name: true } } } },
       },
+    });
+
+    // Dispatch notification to employee
+    await dispatch(sheet.employeeId, "GOAL_SHEET_RETURNED", {
+      title: "Goal Sheet Returned for Rework",
+      body: `Your goal sheet for ${updated.cycle.name} has been returned for rework. Please review the manager's comments.`,
+      deepLink: `/goals/${updated.id}`,
     });
 
     return NextResponse.json({ goalSheet: updated });

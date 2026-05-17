@@ -1,6 +1,6 @@
 /**
- * PUT    /api/v1/goal-sheets/:sheetId/goals/:id  — update a goal in a DRAFT sheet
- * DELETE /api/v1/goal-sheets/:sheetId/goals/:id  — remove a goal from a DRAFT sheet
+ * PUT    /api/v1/goal-sheets/:id/goals/:goalId  — update a goal in a DRAFT sheet
+ * DELETE /api/v1/goal-sheets/:id/goals/:goalId  — remove a goal from a DRAFT sheet
  */
 import { NextRequest, NextResponse } from "next/server";
 import { withEmployee } from "@/lib/auth-helpers";
@@ -74,16 +74,16 @@ async function resolveGoalAccess(
   return { ok: true, goal, sheet };
 }
 
-// ─── PUT /api/v1/goal-sheets/:sheetId/goals/:id ───────────────────────────────
+// ─── PUT /api/v1/goal-sheets/:id/goals/:goalId ───────────────────────────────
 
 export const PUT = withEmployee(
   async (req: NextRequest, context?: { params: Record<string, string> }) => {
-    const sheetId = context?.params?.sheetId;
-    const goalId = context?.params?.id;
+    const id = context?.params?.id;
+    const goalId = context?.params?.goalId;
 
-    if (!sheetId || !goalId) {
+    if (!id || !goalId) {
       return NextResponse.json(
-        { error: "Missing sheetId or goal id" },
+        { error: "Missing id or goalId" },
         { status: 400 }
       );
     }
@@ -92,7 +92,7 @@ export const PUT = withEmployee(
     const userId = session!.user.id;
     const role = session!.user.role;
 
-    const access = await resolveGoalAccess(sheetId, goalId, userId, role);
+    const access = await resolveGoalAccess(id, goalId, userId, role);
     if (!access.ok) {
       return NextResponse.json(
         { error: access.error },
@@ -246,16 +246,16 @@ export const PUT = withEmployee(
   }
 );
 
-// ─── DELETE /api/v1/goal-sheets/:sheetId/goals/:id ───────────────────────────
+// ─── DELETE /api/v1/goal-sheets/:id/goals/:goalId ──────────────────────────
 
 export const DELETE = withEmployee(
   async (_req: NextRequest, context?: { params: Record<string, string> }) => {
-    const sheetId = context?.params?.sheetId;
-    const goalId = context?.params?.id;
+    const id = context?.params?.id;
+    const goalId = context?.params?.goalId;
 
-    if (!sheetId || !goalId) {
+    if (!id || !goalId) {
       return NextResponse.json(
-        { error: "Missing sheetId or goal id" },
+        { error: "Missing id or goalId" },
         { status: 400 }
       );
     }
@@ -264,7 +264,7 @@ export const DELETE = withEmployee(
     const userId = session!.user.id;
     const role = session!.user.role;
 
-    const access = await resolveGoalAccess(sheetId, goalId, userId, role);
+    const access = await resolveGoalAccess(id, goalId, userId, role);
     if (!access.ok) {
       return NextResponse.json(
         { error: access.error },

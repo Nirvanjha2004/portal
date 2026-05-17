@@ -29,6 +29,7 @@ export async function getActiveWindow(): Promise<CheckInWindow | null> {
   }
 
   // Find the window where now falls within [opensAt, closesAt]
+  // Note: we use <= for both to be inclusive, allowing access up to and including the exact close moment
   const openWindow = activeCycle.windows.find(
     (w) => w.opensAt <= now && now <= w.closesAt
   );

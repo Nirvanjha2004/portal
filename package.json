@@ -11,7 +11,8 @@
     "format:check": "prettier --check .",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "test:smoke": "jest --passWithNoTests --testPathPatterns=smoke --forceExit"
+    "test:smoke": "jest --passWithNoTests --testPathPatterns=smoke --forceExit",
+    "seed": "prisma db seed"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
@@ -49,5 +50,8 @@
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.4.9",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }

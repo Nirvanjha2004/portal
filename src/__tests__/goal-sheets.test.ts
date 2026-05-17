@@ -60,11 +60,11 @@ import {
   GET as getGoalSheet,
   PUT as putGoalSheet,
 } from "@/app/api/v1/goal-sheets/[id]/route";
-import { POST as postGoal } from "@/app/api/v1/goal-sheets/[sheetId]/goals/route";
+import { POST as postGoal } from "@/app/api/v1/goal-sheets/[id]/goals/route";
 import {
   PUT as putGoal,
   DELETE as deleteGoal,
-} from "@/app/api/v1/goal-sheets/[sheetId]/goals/[id]/route";
+} from "@/app/api/v1/goal-sheets/[id]/goals/[goalId]/route";
 
 // ── Session helpers ───────────────────────────────────────────────────────────
 
@@ -337,7 +337,7 @@ describe("POST /api/v1/goal-sheets/:sheetId/goals", () => {
       target: "80",
       weightage: 100,
     });
-    const res = await postGoal(req, { params: { sheetId: "sheet-1" } });
+    const res = await postGoal(req, { params: { id: "sheet-1" } });
 
     expect(res.status).toBe(201);
     const body = await res.json();
@@ -360,7 +360,7 @@ describe("POST /api/v1/goal-sheets/:sheetId/goals", () => {
       target: "10",
       weightage: 10,
     });
-    const res = await postGoal(req, { params: { sheetId: "sheet-1" } });
+    const res = await postGoal(req, { params: { id: "sheet-1" } });
 
     expect(res.status).toBe(422);
     const body = await res.json();
@@ -379,7 +379,7 @@ describe("POST /api/v1/goal-sheets/:sheetId/goals", () => {
       target: "10",
       weightage: 5,
     });
-    const res = await postGoal(req, { params: { sheetId: "sheet-1" } });
+    const res = await postGoal(req, { params: { id: "sheet-1" } });
 
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -398,13 +398,13 @@ describe("POST /api/v1/goal-sheets/:sheetId/goals", () => {
       target: "10",
       weightage: 100,
     });
-    const res = await postGoal(req, { params: { sheetId: "sheet-1" } });
+    const res = await postGoal(req, { params: { id: "sheet-1" } });
 
     expect(res.status).toBe(422);
   });
 });
 
-// ── PUT /api/v1/goal-sheets/:sheetId/goals/:id ────────────────────────────────
+// ── PUT /api/v1/goal-sheets/:id/goals/:goalId ──────────────────────────────
 
 describe("PUT /api/v1/goal-sheets/:sheetId/goals/:id", () => {
   beforeEach(() => {
@@ -422,7 +422,7 @@ describe("PUT /api/v1/goal-sheets/:sheetId/goals/:id", () => {
       weightage: 50,
     });
     const res = await putGoal(req, {
-      params: { sheetId: "sheet-1", id: "goal-1" },
+      params: { id: "sheet-1", goalId: "goal-1" },
     });
 
     expect(res.status).toBe(200);
@@ -439,7 +439,7 @@ describe("PUT /api/v1/goal-sheets/:sheetId/goals/:id", () => {
       title: "New title",
     });
     const res = await putGoal(req, {
-      params: { sheetId: "sheet-1", id: "goal-1" },
+      params: { id: "sheet-1", goalId: "goal-1" },
     });
 
     expect(res.status).toBe(403);
@@ -447,7 +447,7 @@ describe("PUT /api/v1/goal-sheets/:sheetId/goals/:id", () => {
   });
 });
 
-// ── DELETE /api/v1/goal-sheets/:sheetId/goals/:id ────────────────────────────
+// ── DELETE /api/v1/goal-sheets/:id/goals/:goalId ────────────────────────────
 
 describe("DELETE /api/v1/goal-sheets/:sheetId/goals/:id", () => {
   beforeEach(() => {
@@ -462,7 +462,7 @@ describe("DELETE /api/v1/goal-sheets/:sheetId/goals/:id", () => {
 
     const req = makeRequest("DELETE", "/api/v1/goal-sheets/sheet-1/goals/goal-1");
     const res = await deleteGoal(req, {
-      params: { sheetId: "sheet-1", id: "goal-1" },
+      params: { id: "sheet-1", goalId: "goal-1" },
     });
 
     expect(res.status).toBe(200);
@@ -483,7 +483,7 @@ describe("DELETE /api/v1/goal-sheets/:sheetId/goals/:id", () => {
 
     const req = makeRequest("DELETE", "/api/v1/goal-sheets/sheet-1/goals/goal-1");
     const res = await deleteGoal(req, {
-      params: { sheetId: "sheet-1", id: "goal-1" },
+      params: { id: "sheet-1", goalId: "goal-1" },
     });
 
     expect(res.status).toBe(403);

@@ -4,13 +4,14 @@
  * Changes status from DRAFT → PENDING_APPROVAL.
  * Runs weightage validation before accepting the submission.
  * Records submittedAt timestamp.
- * (Notification dispatch is wired in Task 9/15.)
+ * Dispatches notification to the manager.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { withEmployee } from "@/lib/auth-helpers";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { validateWeightage, ValidationError } from "@/lib/validation";
+import { dispatch } from "@/services/notification.service";
 
 export const POST = withEmployee(
   async (_req: NextRequest, context?: { params: Record<string, string> }) => {
@@ -63,10 +64,20 @@ export const POST = withEmployee(
         submittedAt: new Date(),
       },
       include: {
+        employee: { select: { id: true, name: true } },
         cycle: { select: { id: true, name: true, isActive: true } },
         goals: { include: { thrustArea: { select: { id: true, name: true } } } },
       },
     });
+
+    // Dispatch notification to manager
+    if (sheet.employee.managerId) {
+      await dispatch(sheet.employee.managerId, "GOAL_SHEET_SUBMITTED", {
+        title: "Goal Sheet Submitted",
+        body: `${updated.employee.name} has submitted their goal sheet for ${updated.cycle.name}.`,
+        deepLink: `/approvals/${updated.id}`,
+      });
+    }
 
     return NextResponse.json({ goalSheet: updated });
   }

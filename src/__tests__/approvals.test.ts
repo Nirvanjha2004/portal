@@ -10,6 +10,23 @@
 
 import { NextRequest } from "next/server";
 
+// ── Mock Redis and Notification Service ────────────────────────────────────────
+jest.mock("@/lib/redis", () => ({
+  __esModule: true,
+  default: {
+    publish: jest.fn().mockResolvedValue(1),
+    duplicate: jest.fn().mockReturnValue({
+      subscribe: jest.fn(),
+      unsubscribe: jest.fn(),
+      quit: jest.fn(),
+    }),
+  },
+}));
+
+jest.mock("@/services/notification.service", () => ({
+  dispatch: jest.fn().mockResolvedValue(undefined),
+}));
+
 // ── Mock Prisma ───────────────────────────────────────────────────────────────
 jest.mock("@/lib/prisma", () => ({
   __esModule: true,
@@ -22,6 +39,7 @@ jest.mock("@/lib/prisma", () => ({
       createMany: jest.fn(),
     },
     $transaction: jest.fn(),
+    $use: jest.fn(),
   },
 }));
 
