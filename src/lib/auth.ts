@@ -3,7 +3,8 @@
  * Supports CredentialsProvider for demo accounts.
  * Azure AD provider is additive — enabled when env vars are present.
  */
-import NextAuth, { type NextAuthConfig } from "next-auth";
+import NextAuth from "next-auth";
+import type { NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
@@ -23,9 +24,7 @@ declare module "next-auth" {
   interface User {
     role: Role;
   }
-}
 
-declare module "next-auth/jwt" {
   interface JWT {
     role: Role;
   }
@@ -78,7 +77,7 @@ export const authConfig: NextAuthConfig = {
       // Expose role and id on the session object
       if (token && session.user) {
         session.user.id = token.sub as string;
-        session.user.role = token.role;
+        session.user.role = token.role as Role;
       }
       return session;
     },

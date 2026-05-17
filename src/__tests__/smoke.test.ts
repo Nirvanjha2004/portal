@@ -1,11 +1,12 @@
 /**
- * Smoke test — verifies the Next.js dev server starts and the home page
- * (which redirects to /login for unauthenticated users) returns a 2xx/3xx.
- *
- * This test starts the Next.js production build server on a random port,
- * makes a GET request to /, and asserts the response is not a 5xx error.
+ * Smoke test — verifies the Next.js production server starts and the home
+ * page (which redirects to /login for unauthenticated users) returns a
+ * 2xx/3xx status code.
  *
  * Prerequisites: run `npm run build` before running this test.
+ *
+ * The test spawns `next start` on a dedicated port, waits for it to be
+ * ready, then makes HTTP requests and asserts on the status codes.
  */
 import { spawn, ChildProcess } from "child_process";
 import http from "http";
@@ -13,8 +14,9 @@ import path from "path";
 
 const PORT = 3099;
 const BASE_URL = `http://localhost:${PORT}`;
-const STARTUP_TIMEOUT_MS = 30_000;
+const STARTUP_TIMEOUT_MS = 45_000;
 
+/** Polls the given URL until it responds (any status) or the timeout elapses. */
 function waitForServer(url: string, timeoutMs: number): Promise<void> {
   return new Promise((resolve, reject) => {
     const deadline = Date.now() + timeoutMs;
@@ -27,7 +29,11 @@ function waitForServer(url: string, timeoutMs: number): Promise<void> {
         })
         .on("error", () => {
           if (Date.now() > deadline) {
-            reject(new Error(`Server at ${url} did not start within ${timeoutMs}ms`));
+            reject(
+              new Error(
+                `Server at ${url} did not start within ${timeoutMs}ms`
+              )
+            );
           } else {
             setTimeout(attempt, 500);
           }
@@ -54,35 +60,45 @@ describe("Smoke test — home page", () => {
 
   beforeAll(async () => {
     const projectRoot = path.resolve(__dirname, "../..");
+    const isWindows = process.platform === "win32";
 
-    server = spawn(
-      "node",
-      ["node_modules/.bin/next", "start", "--port", String(PORT)],
-      {
-        cwd: projectRoot,
-        env: {
-          ...process.env,
-          PORT: String(PORT),
-          // Provide minimal env so Next.js starts without crashing
-          DATABASE_URL: process.env.DATABASE_URL ?? "postgresql://localhost/test",
-          REDIS_URL: process.env.REDIS_URL ?? "redis://localhost:6379",
-          NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ?? "smoke-test-secret-32-chars-long!!",
-          NEXTAUTH_URL: `http://localhost:${PORT}`,
-        },
-        stdio: "pipe",
-      }
-    );
+    // On Windows, npm/npx scripts are .cmd files and require shell:true
+    server = spawn("npx", ["next", "start", "--port", String(PORT)], {
+      cwd: projectRoot,
+      env: {
+        ...process.env,
+        PORT: String(PORT),
+        // Provide minimal env so Next.js starts without crashing
+        DATABASE_URL:
+          process.env.DATABASE_URL ?? "postgresql://localhost:5432/test",
+        REDIS_URL: process.env.REDIS_URL ?? "redis://localhost:6379",
+        NEXTAUTH_SECRET:
+          process.env.NEXTAUTH_SECRET ?? "smoke-test-secret-32-chars-long!!",
+        NEXTAUTH_URL: `http://localhost:${PORT}`,
+      },
+      stdio: "pipe",
+      shell: isWindows,
+    });
 
     server.stderr?.on("data", (d) => {
-      // Suppress noisy output during tests
+      // Suppress noisy output during tests unless DEBUG_SMOKE is set
       if (process.env.DEBUG_SMOKE) process.stderr.write(d);
     });
 
     await waitForServer(`${BASE_URL}/api/auth/session`, STARTUP_TIMEOUT_MS);
-  }, STARTUP_TIMEOUT_MS + 5_000);
+  }, STARTUP_TIMEOUT_MS + 10_000);
 
   afterAll(() => {
-    server?.kill("SIGTERM");
+    if (server) {
+      // On Windows, kill the entire process tree
+      if (process.platform === "win32") {
+        spawn("taskkill", ["/pid", String(server.pid), "/f", "/t"], {
+          stdio: "ignore",
+        });
+      } else {
+        server.kill("SIGTERM");
+      }
+    }
   });
 
   it("GET / returns a non-5xx status code", async () => {

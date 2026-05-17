@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "jest --passWithNoTests",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:smoke": "jest --passWithNoTests --testPathPatterns=smoke --forceExit"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

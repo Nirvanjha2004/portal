@@ -8,8 +8,8 @@ export default function UnauthorizedPage() {
       <p className="text-muted-foreground">
         You don&apos;t have permission to access this page.
       </p>
-      <Button asChild variant="outline">
-        <Link href="/">Go home</Link>
+      <Button variant="outline" render={<Link href="/" />}>
+        Go home
       </Button>
     </div>
   );
