@@ -1,0 +1,53 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Build outputs
+.next
+dist
+build
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.jest-cache
+coverage
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# README & Docs
+README.md
+*.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Other
+.kiro
+.vercel
+*.log

@@ -1,0 +1,50 @@
+version: '3.9'
+
+# Development Docker Compose - includes hot reload and debugging tools
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  app:
+    # Override the default build to use development mode
+    command: npm run dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      # Enable hot reload by mounting the source code
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      # Add Node debugger port
+      - "9229:9229"
+    # Comment out the restart policy for development
+    restart: no
+
+  # PgAdmin for PostgreSQL management (development only)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: portal-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - portal_network
+    restart: unless-stopped
+
+  # Redis Commander for Redis management (development only)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: portal-redis-commander
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - portal_network
+    restart: unless-stopped
